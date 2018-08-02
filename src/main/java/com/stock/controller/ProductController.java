@@ -2,10 +2,7 @@ package com.stock.controller;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-
-import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,15 +20,14 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.stock.entity.CategoryAttribute;
 import com.stock.entity.CategoryAttributeProduct;
 import com.stock.entity.Product;
 import com.stock.entity.SharedUser;
 import com.stock.entity.StockRest;
 import com.stock.repository.CategoryAttributeProductRepository;
-import com.stock.repository.CategoryAttributeRepository;
 import com.stock.repository.ProductRepository;
 import com.stock.repository.StockRestRepository;
+import com.stock.service.ProductService;
 import com.stock.service.UserService;
 
 @RestController
@@ -51,14 +47,11 @@ public class ProductController {
 	UserService userService;
 
 	@Autowired
-	CategoryAttributeRepository categoryAttributeRepository;
-	
-	@Autowired
-	CategoryAttributeProductRepository categoryAttributeProductRepository;
-	
-	@Autowired
 	CategoryAttributeProductRepository catAttrProdRepository;
-	
+
+	@Autowired
+	ProductService productService;
+
 	@GetMapping("")
 	public List<Product> getAll() {
 		return productRepository.findAll();
@@ -75,9 +68,9 @@ public class ProductController {
 		if (idUser != null) {
 			SharedUser user = userService.getSharedUser(idUser);
 			Product product = productRepository.findById(Long.valueOf(id)).orElse(null);
-			return user.isAdmin() 
-					? stockRestRepository.findByProduct(product) 
-					: stockRestRepository.findByProductAndStockIdIn(product, user.getViewstocks().stream().map(stockId -> Long.valueOf(stockId)).collect(Collectors.toList()));
+			return user.isAdmin() ? stockRestRepository.findByProduct(product)
+					: stockRestRepository.findByProductAndStockIdIn(product, user.getViewstocks().stream()
+							.map(stockId -> Long.valueOf(stockId)).collect(Collectors.toList()));
 		}
 		return stockRestRepository.findByProduct(productRepository.findById(Long.valueOf(id)).orElse(null));
 	}
@@ -105,48 +98,43 @@ public class ProductController {
 		}
 		return ResponseEntity.badRequest().body(null);
 	}
-	
+
 	@GetMapping("/{id}/attributes")
 	public List<CategoryAttributeProduct> getProductAttributes(@PathVariable String id) {
 		Product product = productRepository.findById(Long.valueOf(id)).orElse(null);
-		return categoryAttributeProductRepository.findByProduct(product);
+		return catAttrProdRepository.findByProduct(product);
 	}
-	
-	@Transactional
+
 	@PostMapping("/{id}/attributes")
-	public ResponseEntity<?> updateProductAttributes(@PathVariable String id, @RequestBody List<String> attributesIds) {
+	public ResponseEntity<?> updateProductAttributes(@PathVariable String id, @RequestBody List<String> attributesIds,
+			@RequestHeader(value = "idUser", required = true) String idUser)
+			throws JsonParseException, JsonMappingException, IOException {
+
+		if (!userService.isAllowedToChangeProduct(idUser)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+
 		Product product = productRepository.findById(Long.valueOf(id)).orElse(null);
 		if (product == null) {
 			return ResponseEntity.badRequest().body(null);
 		}
-		List<CategoryAttributeProduct> productAttributes = categoryAttributeProductRepository.findByProduct(product);
-		Map<Long, CategoryAttributeProduct> attributesMap = productAttributes.stream().collect(Collectors.toMap(element -> element.getId(), element -> element));
-		attributesIds.stream().forEach(attributeId -> {
-			Long idLong = Long.valueOf(attributeId);
-			if (!attributesMap.containsKey(idLong)) {
-				CategoryAttribute attr = categoryAttributeRepository.findById(idLong).orElse(null);
-				if (attr != null) {
-					CategoryAttributeProduct attrProduct = new CategoryAttributeProduct();
-					attrProduct.setCategoryAttribute(attr);
-					attrProduct.setProduct(product);
-					categoryAttributeProductRepository.save(attrProduct);
-				}
-			}
-		});
+
+		productService.updateProductAttributes(product, attributesIds);
+
 		return ResponseEntity.ok(null);
 	}
-	
+
 	@GetMapping("/attributes")
 	public List<Product> getAllProductsForAttributes(@RequestParam List<String> ids) {
-		List<Long> longIds = ids.stream().map(id -> Long.valueOf(id)).collect(Collectors.toList());
-		List<Long>productIds = catAttrProdRepository.findProductIdsByInclAttributeList(longIds, Long.valueOf(longIds.size()));
-		return productIds.stream().map(id -> productRepository.findById(id).orElse(null)).collect(Collectors.toList());
+		return productService.getAllProductsForAttributes(ids);
 	}
 
 	@GetMapping("/{id}/orders")
-	public Object getStockOrders(@RequestHeader(value = "idUser", required = true) String idUser, @PathVariable String id) {
-		return (idUser != null) 
-				? restTemplate.getForObject("http://order-api/orders?productId=" + id + "&paramUserId=" + idUser, Object.class)
+	public Object getStockOrders(@RequestHeader(value = "idUser", required = true) String idUser,
+			@PathVariable String id) {
+		return (idUser != null)
+				? restTemplate.getForObject("http://order-api/orders?productId=" + id + "&paramUserId=" + idUser,
+						Object.class)
 				: restTemplate.getForObject("http://order-api/orders?productId=" + id, Object.class);
 	}
 
