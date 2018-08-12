@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.transaction.Transactional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,11 +25,11 @@ import com.stock.entity.Product;
 import com.stock.entity.SharedUser;
 import com.stock.entity.StockRest;
 import com.stock.repository.CategoryAttributeProductRepository;
-import com.stock.repository.CategoryAttributeRepository;
 import com.stock.repository.ProductRepository;
 import com.stock.repository.ProductTreeRepository;
 import com.stock.repository.StockRestRepository;
 import com.stock.service.BadRequestException;
+
 import com.stock.service.ProductService;
 import com.stock.service.UserService;
 
@@ -52,14 +50,8 @@ public class ProductController {
 	UserService userService;
 
 	@Autowired
-	CategoryAttributeRepository categoryAttributeRepository;
-	
-	@Autowired
-	CategoryAttributeProductRepository categoryAttributeProductRepository;
-	
-	@Autowired
 	CategoryAttributeProductRepository catAttrProdRepository;
-	
+
 	@Autowired
 	ProductTreeRepository productTreeRepository;
 	
@@ -86,9 +78,9 @@ public class ProductController {
 		if (idUser != null) {
 			SharedUser user = userService.getSharedUser(idUser);
 			Product product = productRepository.findById(Long.valueOf(id)).orElse(null);
-			return user.isAdmin() 
-					? stockRestRepository.findByProduct(product) 
-					: stockRestRepository.findByProductAndStockIdIn(product, user.getViewstocks().stream().map(stockId -> Long.valueOf(stockId)).collect(Collectors.toList()));
+			return user.isAdmin() ? stockRestRepository.findByProduct(product)
+					: stockRestRepository.findByProductAndStockIdIn(product, user.getViewstocks().stream()
+							.map(stockId -> Long.valueOf(stockId)).collect(Collectors.toList()));
 		}
 		return stockRestRepository.findByProduct(productRepository.findById(Long.valueOf(id)).orElse(null));
 	}
@@ -116,14 +108,13 @@ public class ProductController {
 		}
 		return ResponseEntity.badRequest().body(null);
 	}
-	
+
 	@GetMapping("/{id}/attributes")
 	public List<CategoryAttributeProduct> getProductAttributes(@PathVariable String id) {
 		Product product = productRepository.findById(Long.valueOf(id)).orElse(null);
-		return categoryAttributeProductRepository.findByProduct(product);
+		return catAttrProdRepository.findByProduct(product);
 	}
-	
-	@Transactional
+
 	@PostMapping("/{id}/attributes")
 	public ResponseEntity<?> updateProductAttributes(@PathVariable String id, @RequestBody List<String> attributesIds) {
 		try {
@@ -132,20 +123,19 @@ public class ProductController {
 		} catch (BadRequestException e) {
 			return ResponseEntity.badRequest().body(null);
 		}
-		
 	}
-	
+
 	@GetMapping("/attributes")
 	public List<Product> getAllProductsForAttributes(@RequestParam List<String> ids) {
-		List<Long> longIds = ids.stream().map(id -> Long.valueOf(id)).collect(Collectors.toList());
-		List<Long>productIds = catAttrProdRepository.findProductIdsByInclAttributeList(longIds, Long.valueOf(longIds.size()));
-		return productIds.stream().map(id -> productRepository.findById(id).orElse(null)).collect(Collectors.toList());
+		return productService.getAllProductsForAttributes(ids);
 	}
 
 	@GetMapping("/{id}/orders")
-	public Object getStockOrders(@RequestHeader(value = "idUser", required = true) String idUser, @PathVariable String id) {
-		return (idUser != null) 
-				? restTemplate.getForObject("http://order-api/orders?productId=" + id + "&paramUserId=" + idUser, Object.class)
+	public Object getStockOrders(@RequestHeader(value = "idUser", required = true) String idUser,
+			@PathVariable String id) {
+		return (idUser != null)
+				? restTemplate.getForObject("http://order-api/orders?productId=" + id + "&paramUserId=" + idUser,
+						Object.class)
 				: restTemplate.getForObject("http://order-api/orders?productId=" + id, Object.class);
 	}
 
