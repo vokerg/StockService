@@ -4,21 +4,16 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 
 @Entity
-public class Product {
+public class ProductTree {
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	private String name;
-	@ManyToOne
-    @JoinColumn(name = "product_tree_id")
-	private ProductTree productTree;
-	private float price;
+	private long parentId;
 	
-	public Product() {
+	public ProductTree() {
 		super();
 	}
 	
@@ -34,20 +29,11 @@ public class Product {
 	public void setName(String name) {
 		this.name = name;
 	}
-
-	public ProductTree getProductTree() {
-		return productTree;
+	public long getParentId() {
+		return parentId;
 	}
-
-	public void setProductTree(ProductTree productTree) {
-		this.productTree = productTree;
+	public void setParentId(long parentId) {
+		this.parentId = parentId;
 	}
-
-	public float getPrice() {
-		return price;
-	}
-
-	public void setPrice(float price) {
-		this.price = price;
-	}
+	
 }
