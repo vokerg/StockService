@@ -30,20 +30,20 @@ public class ProductService {
 
 	@Autowired
 	CategoryAttributeRepository catAttrRepository;
-	
+
 	@Autowired
 	ProductTreeRepository productTreeRepository;
-	
+
 	@Autowired
 	CategoryAttributeProductRepository categoryAttributeProductRepository;
-	
+
 	@Autowired
 	CategoryAttributeRepository categoryAttributeRepository;
-	
+
 	public List<Product> getProductsByParentId(String parentId) throws BadRequestException {
 		ProductTree productTree = productTreeRepository.findById(Long.valueOf(parentId)).orElse(null);
 		if (productTree == null) {
-			throw new BadRequestException();
+			throw new BadRequestException("product tree does not exist");
 		} else {
 			return productRepository.findByProductTree(productTree);
 		}
@@ -53,7 +53,7 @@ public class ProductService {
 	public void updateProductAttributes(String productId, List<String> attributesIds) throws BadRequestException {
 		Product product = productRepository.findById(Long.valueOf(productId)).orElse(null);
 		if (product == null) {
-			throw new BadRequestException();
+			throw new BadRequestException("product does not exist");
 		}
 		List<CategoryAttributeProduct> productAttributes = catAttrProdRepository.findByProduct(product);
 		Map<Long, CategoryAttributeProduct> attributesMap = productAttributes.stream()
@@ -77,5 +77,22 @@ public class ProductService {
 		List<Long> productIds = catAttrProdRepository.findProductIdsByInclAttributeList(longIds,
 				Long.valueOf(longIds.size()));
 		return productIds.stream().map(id -> productRepository.findById(id).orElse(null)).collect(Collectors.toList());
+	}
+
+	public void addProductTree(String parentIdStr, ProductTree productTree) throws BadRequestException {
+		Long parentId = Long.valueOf(parentIdStr);
+		if (parentId != 0) {
+			productTreeRepository.findById(Long.valueOf(parentId))
+					.orElseThrow(() -> new BadRequestException("product tree does not exist"));
+		}
+		productTree.setParentId(parentId);
+		productTreeRepository.save(productTree);
+	}
+
+	public void addProduct(Product product) throws BadRequestException {
+		if (product.getProductTree() == null) {
+			throw new BadRequestException("product tree does not exist");
+		}
+		productRepository.save(product);
 	}
 }

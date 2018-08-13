@@ -22,15 +22,15 @@ import com.stock.service.ProductService;
 public class ProductTreeController {
 	@Autowired
 	ProductTreeRepository productTreeRepository;
-	
+
 	@Autowired
 	ProductService productService;
-	
+
 	@GetMapping("/{parentId}")
 	List<ProductTree> getProductTrees(@PathVariable String parentId) {
 		return productTreeRepository.findByParentId(Long.valueOf(parentId));
 	}
-	
+
 	@GetMapping("/{parentId}/products")
 	ResponseEntity<List<Product>> getProducts(@PathVariable String parentId) {
 		try {
@@ -39,10 +39,14 @@ public class ProductTreeController {
 			return ResponseEntity.badRequest().body(null);
 		}
 	}
-	
+
 	@PutMapping("/{parentId}")
-	ResponseEntity<?> addProductTree(@PathVariable String pathVariable, @RequestBody ProductTree productTree) {
-		productTreeRepository.save(productTree);
+	ResponseEntity<?> addProductTree(@PathVariable String parentId, @RequestBody ProductTree productTree) {
+		try {
+			productService.addProductTree(parentId, productTree);
+		} catch (BadRequestException e) {
+			return ResponseEntity.badRequest().body(null);
+		}
 		return ResponseEntity.ok(null);
 	}
 }

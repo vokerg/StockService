@@ -54,14 +54,15 @@ public class ProductController {
 
 	@Autowired
 	ProductTreeRepository productTreeRepository;
-	
+
 	@Autowired
 	ProductService productService;
-	
+
 	@GetMapping("")
-	public ResponseEntity<List<Product>> getAll(@RequestParam(required=false) String parentId) {
+	public ResponseEntity<List<Product>> getAll(@RequestParam(required = false) String parentId) {
 		try {
-			return ResponseEntity.ok((parentId == null) ? productRepository.findAll() : productService.getProductsByParentId(parentId));
+			return ResponseEntity.ok(
+					(parentId == null) ? productRepository.findAll() : productService.getProductsByParentId(parentId));
 		} catch (BadRequestException e) {
 			return ResponseEntity.badRequest().body(null);
 		}
@@ -91,7 +92,12 @@ public class ProductController {
 		if (!userService.isAllowedToChangeProduct(idUser)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
-		productRepository.save(product);
+		try {
+			productService.addProduct(product);
+		} catch (BadRequestException e) {
+			return ResponseEntity.badRequest().body(null);
+		}
+
 		return ResponseEntity.ok(product);
 	}
 
