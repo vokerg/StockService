@@ -25,6 +25,11 @@ public class ProductTreeController {
 
 	@Autowired
 	ProductService productService;
+	
+	@GetMapping("")
+	List<ProductTree> getProductTrees() {
+		return productTreeRepository.findAll();
+	}
 
 	@GetMapping("/{parentId}")
 	List<ProductTree> getProductTrees(@PathVariable String parentId) {
