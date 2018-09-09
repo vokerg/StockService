@@ -17,4 +17,5 @@ public interface CategoryAttributeProductRepository extends JpaRepository<Catego
 	List<CategoryAttributeProduct> findByCategoryAttributeIdIn(List<Long> categoryAttributeIds);
 	@Query("select product.id from CategoryAttributeProduct cap where cap.categoryAttribute.id in (:ids) group by product.id having count(*) >= :qty")
 	List<Long> findProductIdsByInclAttributeList(@Param("ids") List<Long> ids, @Param("qty") Long qty);
+	void deleteByProductAndCategoryAttributeNotIn(Product products, List<CategoryAttribute> categories);
 }

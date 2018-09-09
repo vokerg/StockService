@@ -50,6 +50,7 @@ public class ProductService {
 	}
 
 	@Transactional
+	//TODO review
 	public void updateProductAttributes(String productId, List<String> attributesIds) throws BadRequestException {
 		Product product = productRepository.findById(Long.valueOf(productId)).orElse(null);
 		if (product == null) {
@@ -94,5 +95,25 @@ public class ProductService {
 			throw new BadRequestException("product tree does not exist");
 		}
 		productRepository.save(product);
+	}
+
+	@Transactional
+	public void deepSave(Product product) {
+		if (product.getCategoryAttributeProducts() != null) {
+			List<CategoryAttribute> catAttrs = product.getCategoryAttributeProducts().stream()
+					.map(catAttrProd -> catAttrProd.getCategoryAttribute()).collect(Collectors.toList());
+			categoryAttributeProductRepository.deleteByProductAndCategoryAttributeNotIn(product, catAttrs);
+			List<Long> remainingCatAttrIds = categoryAttributeProductRepository.findByProduct(product).stream()
+					.map(catAttr -> catAttr.getCategoryAttribute().getId()).collect(Collectors.toList());
+			product.getCategoryAttributeProducts().forEach(catAttrProd -> {
+				if (!remainingCatAttrIds.contains(catAttrProd.getCategoryAttribute().getId())) {
+					catAttrProd.setProduct(product);
+					categoryAttributeProductRepository.save(catAttrProd);
+				}
+			});
+			product.setCategoryAttributeProducts(null);
+		}
+		productRepository.save(product);
+
 	}
 }

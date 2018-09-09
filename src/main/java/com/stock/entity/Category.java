@@ -21,6 +21,8 @@ public class Category {
 
 	private String name;
 
+	private Boolean multipleChoice;
+
 	public Category() {
 		super();
 	}
@@ -47,5 +49,13 @@ public class Category {
 
 	public void setCategoryAttributes(List<CategoryAttribute> categoryAttributes) {
 		this.categoryAttributes = categoryAttributes;
+	}
+
+	public boolean isMultipleChoice() {
+		return multipleChoice;
+	}
+
+	public void setMultipleChoice(boolean multipleChoice) {
+		this.multipleChoice = multipleChoice;
 	}
 }

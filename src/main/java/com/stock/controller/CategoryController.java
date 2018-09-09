@@ -2,7 +2,6 @@ package com.stock.controller;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,6 +23,7 @@ import com.stock.entity.Product;
 import com.stock.repository.CategoryAttributeProductRepository;
 import com.stock.repository.CategoryAttributeRepository;
 import com.stock.repository.CategoryRepository;
+import com.stock.repository.ProductRepository;
 import com.stock.service.UserService;
 
 @RestController
@@ -40,6 +40,9 @@ public class CategoryController {
 
 	@Autowired
 	CategoryAttributeProductRepository catAttrProdRepository;
+	
+	@Autowired
+	ProductRepository productRepository;
 
 	@GetMapping("")
 	public List<Category> getAllCategories() {
@@ -83,6 +86,6 @@ public class CategoryController {
 	@GetMapping("/attributes/{id}/products")
 	public List<Product> getAllProductsForAttribute(@PathVariable String id) {
 		List<CategoryAttributeProduct> list = catAttrProdRepository.findByCategoryAttributeId(Long.valueOf(id));
-		return list.stream().map(catAttrProd -> catAttrProd.getProduct()).collect(Collectors.toList());
+		return productRepository.findByCategoryAttributeProductsIn(list);
 	}
 }

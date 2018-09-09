@@ -109,7 +109,7 @@ public class ProductController {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
 		if (product.getId() == Long.valueOf(id)) {
-			productRepository.save(product);
+			productService.deepSave(product);
 			return ResponseEntity.ok(null);
 		}
 		return ResponseEntity.badRequest().body(null);

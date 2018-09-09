@@ -30,8 +30,13 @@ public class ProductTreeController {
 	List<ProductTree> getProductTrees() {
 		return productTreeRepository.findAll();
 	}
+	
+	@GetMapping("/{id}")
+	ProductTree getProductTree(@PathVariable String id) {
+		return productTreeRepository.findById(Long.valueOf(id)).orElse(null);
+	}
 
-	@GetMapping("/{parentId}")
+	@GetMapping("/{parentId}/children")
 	List<ProductTree> getProductTrees(@PathVariable String parentId) {
 		return productTreeRepository.findByParentId(Long.valueOf(parentId));
 	}
