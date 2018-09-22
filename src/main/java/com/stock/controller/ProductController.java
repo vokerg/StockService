@@ -70,20 +70,20 @@ public class ProductController {
 
 	@GetMapping("/{id}")
 	public Product getProduct(@PathVariable String id) {
-		return this.productRepository.findById(Long.valueOf(id)).orElse(null);
+		return productService.getProduct(id);
 	}
 
 	@GetMapping("/{id}/productrest")
 	public List<StockRest> getProductRest(@RequestHeader(value = "idUser", required = true) String idUser,
 			@PathVariable String id) throws JsonParseException, JsonMappingException, IOException {
+		Product product = productService.getProduct(id);
 		if (idUser != null) {
 			SharedUser user = userService.getSharedUser(idUser);
-			Product product = productRepository.findById(Long.valueOf(id)).orElse(null);
 			return user.isAdmin() ? stockRestRepository.findByProduct(product)
 					: stockRestRepository.findByProductAndStockIdIn(product, user.getViewstocks().stream()
 							.map(stockId -> Long.valueOf(stockId)).collect(Collectors.toList()));
 		}
-		return stockRestRepository.findByProduct(productRepository.findById(Long.valueOf(id)).orElse(null));
+		return stockRestRepository.findByProduct(product);
 	}
 
 	@PutMapping("")
@@ -109,7 +109,11 @@ public class ProductController {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
 		if (product.getId() == Long.valueOf(id)) {
-			productService.deepSave(product);
+			try {
+				productService.deepSave(product);
+			} catch (BadRequestException e) {
+				return ResponseEntity.badRequest().body(null);
+			}
 			return ResponseEntity.ok(null);
 		}
 		return ResponseEntity.badRequest().body(null);
@@ -117,7 +121,7 @@ public class ProductController {
 
 	@GetMapping("/{id}/attributes")
 	public List<CategoryAttributeProduct> getProductAttributes(@PathVariable String id) {
-		Product product = productRepository.findById(Long.valueOf(id)).orElse(null);
+		Product product = productService.getProduct(id);
 		return catAttrProdRepository.findByProduct(product);
 	}
 

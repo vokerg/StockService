@@ -35,9 +35,6 @@ public class ProductService {
 	ProductTreeRepository productTreeRepository;
 
 	@Autowired
-	CategoryAttributeProductRepository categoryAttributeProductRepository;
-
-	@Autowired
 	CategoryAttributeRepository categoryAttributeRepository;
 
 	public List<Product> getProductsByParentId(String parentId) throws BadRequestException {
@@ -52,13 +49,12 @@ public class ProductService {
 	@Transactional
 	//TODO review
 	public void updateProductAttributes(String productId, List<String> attributesIds) throws BadRequestException {
-		Product product = productRepository.findById(Long.valueOf(productId)).orElse(null);
+		Product product = getProduct(productId);
 		if (product == null) {
 			throw new BadRequestException("product does not exist");
 		}
 		List<CategoryAttributeProduct> productAttributes = catAttrProdRepository.findByProduct(product);
-		Map<Long, CategoryAttributeProduct> attributesMap = productAttributes.stream()
-				.collect(Collectors.toMap(element -> element.getId(), element -> element));
+		Map<Long, CategoryAttributeProduct> attributesMap = getProductAttributesMap(productAttributes);
 		attributesIds.stream().forEach(attributeId -> {
 			Long idLong = Long.valueOf(attributeId);
 			if (!attributesMap.containsKey(idLong)) {
@@ -73,11 +69,24 @@ public class ProductService {
 		});
 	}
 
+	private Map<Long, CategoryAttributeProduct> getProductAttributesMap(List<CategoryAttributeProduct> productAttributes) {
+		return productAttributes.stream()
+				.collect(Collectors.toMap(element -> element.getId(), element -> element));
+	}
+
+	public Product getProduct(String productId) {
+		return getProduct(Long.valueOf(productId));
+	}
+
+	public Product getProduct(Long productId) {
+		return productRepository.findById(productId).orElse(null);
+	}
+
 	public List<Product> getAllProductsForAttributes(List<String> ids) {
 		List<Long> longIds = ids.stream().map(id -> Long.valueOf(id)).collect(Collectors.toList());
 		List<Long> productIds = catAttrProdRepository.findProductIdsByInclAttributeList(longIds,
 				Long.valueOf(longIds.size()));
-		return productIds.stream().map(id -> productRepository.findById(id).orElse(null)).collect(Collectors.toList());
+		return productIds.stream().map(id -> getProduct(id)).collect(Collectors.toList());
 	}
 
 	public void addProductTree(String parentIdStr, ProductTree productTree) throws BadRequestException {
@@ -96,24 +105,41 @@ public class ProductService {
 		}
 		productRepository.save(product);
 	}
-
+	
 	@Transactional
-	public void deepSave(Product product) {
-		if (product.getCategoryAttributeProducts() != null) {
-			List<CategoryAttribute> catAttrs = product.getCategoryAttributeProducts().stream()
-					.map(catAttrProd -> catAttrProd.getCategoryAttribute()).collect(Collectors.toList());
-			categoryAttributeProductRepository.deleteByProductAndCategoryAttributeNotIn(product, catAttrs);
-			List<Long> remainingCatAttrIds = categoryAttributeProductRepository.findByProduct(product).stream()
-					.map(catAttr -> catAttr.getCategoryAttribute().getId()).collect(Collectors.toList());
-			product.getCategoryAttributeProducts().forEach(catAttrProd -> {
-				if (!remainingCatAttrIds.contains(catAttrProd.getCategoryAttribute().getId())) {
-					catAttrProd.setProduct(product);
-					categoryAttributeProductRepository.save(catAttrProd);
-				}
-			});
+	public void deepSave(Product product) throws BadRequestException {
+		if (product.getProductTree() == null) {
+			throw new BadRequestException("product tree does not exist");
+		}
+		saveCategoryAttributeProducts(product);
+		productRepository.save(product);
+	}
+
+	private void saveCategoryAttributeProducts(Product product) {
+		List<CategoryAttributeProduct> prodCatAttrs = product.getCategoryAttributeProducts(); 
+		if (prodCatAttrs != null) {
+			List<CategoryAttribute> catAttrs = getCategoryAttributes(product);
+			catAttrProdRepository.deleteByProductAndCategoryAttributeNotIn(product, catAttrs);
+			List<Long> dbCatAttrIds = getDbCategoryAttributeIds(product);
+			prodCatAttrs.forEach(catAttrProd -> saveCategoryAttributeProduct(catAttrProd, product, dbCatAttrIds));
 			product.setCategoryAttributeProducts(null);
 		}
-		productRepository.save(product);
+	}
+	
+	private void saveCategoryAttributeProduct(CategoryAttributeProduct catAttrProd, Product product, List<Long> skipIds) {
+		if (!skipIds.contains(catAttrProd.getCategoryAttribute().getId())) {
+			catAttrProd.setProduct(product);
+			catAttrProdRepository.save(catAttrProd);
+		}
+	}
 
+	private List<Long> getDbCategoryAttributeIds(Product product) {
+		return catAttrProdRepository.findByProduct(product).stream()
+				.map(catAttr -> catAttr.getCategoryAttribute().getId()).collect(Collectors.toList());
+	}
+	
+	private List<CategoryAttribute> getCategoryAttributes(Product product) {
+		return product.getCategoryAttributeProducts().stream()
+				.map(catAttrProd -> catAttrProd.getCategoryAttribute()).collect(Collectors.toList());
 	}
 }
