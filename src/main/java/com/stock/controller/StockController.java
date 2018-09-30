@@ -1,6 +1,5 @@
 package com.stock.controller;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,11 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.stock.entity.Product;
 import com.stock.entity.SharedUser;
 import com.stock.entity.Stock;
@@ -44,13 +40,12 @@ public class StockController {
 
 	@Autowired
 	UserService userService;
-	
+
 	@Autowired
 	ProductRepository productRepository;
 
 	@GetMapping("")
-	public List<Stock> allStocks(@RequestHeader(value = "idUser", required = false) String idUser)
-			throws JsonParseException, JsonMappingException, IOException {
+	public List<Stock> allStocks(@RequestHeader(value = "idUser", required = false) String idUser) {
 		if (idUser != null) {
 			SharedUser user = getSharedUser(idUser);
 			return user.isAdmin() ? this.stockRepository.findAll()
@@ -62,7 +57,7 @@ public class StockController {
 
 	@GetMapping("/{id}")
 	public ResponseEntity<Stock> getStock(@RequestHeader(value = "idUser", required = false) String idUser,
-			@PathVariable String id) throws JsonParseException, JsonMappingException, IOException {
+			@PathVariable String id) {
 		return userService.isAllowedToSeeStock(idUser, id)
 				? ResponseEntity.ok(this.stockRepository.findById(Long.valueOf(id)).orElse(null))
 				: ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
@@ -71,14 +66,13 @@ public class StockController {
 
 	@GetMapping("/{id}/stockrest")
 	public ResponseEntity<List<StockRest>> getStockRest(
-			@RequestHeader(value = "idUser", required = false) String idUser, @PathVariable String id)
-			throws JsonParseException, JsonMappingException, NumberFormatException, IOException {
+			@RequestHeader(value = "idUser", required = false) String idUser, @PathVariable String id) {
 		return userService.isAllowedToSeeStock(idUser, id)
-				? ResponseEntity
-						.ok(this.stockRestRepository.findByStockExcludeEmpty(this.stockRepository.findById(Long.valueOf(id)).orElse(null)))
+				? ResponseEntity.ok(this.stockRestRepository
+						.findByStockExcludeEmpty(this.stockRepository.findById(Long.valueOf(id)).orElse(null)))
 				: ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 	}
-	
+
 	@GetMapping("/{id}/stockrest/{productId}")
 	public ResponseEntity<Float> getStockRestForProduct(@PathVariable String id, @PathVariable String productId) {
 		Stock stock = this.stockRepository.findById(Long.valueOf(id)).orElse(null);
@@ -92,7 +86,7 @@ public class StockController {
 
 	@GetMapping("/{id}/orders")
 	public ResponseEntity<?> getStockOrders(@RequestHeader(value = "idUser", required = false) String idUser,
-			@PathVariable String id) throws JsonParseException, JsonMappingException, RestClientException, IOException {
+			@PathVariable String id) {
 		return userService.isAllowedToSeeStock(idUser, id)
 				? ResponseEntity.ok()
 						.body(restTemplate.getForObject("http://order-api/orders?stockId=" + id, Object.class))
@@ -101,8 +95,7 @@ public class StockController {
 
 	@GetMapping("/{id}/orders/{orderId}")
 	public ResponseEntity<?> getStockOrder(@RequestHeader(value = "idUser", required = false) String idUser,
-			@PathVariable String id, @PathVariable String orderId)
-			throws JsonParseException, JsonMappingException, RestClientException, IOException {
+			@PathVariable String id, @PathVariable String orderId) {
 		return userService.isAllowedToSeeStock(idUser, id)
 				? ResponseEntity.ok()
 						.body(restTemplate.getForObject("http://order-api/orders/" + orderId, Object.class))
@@ -117,8 +110,7 @@ public class StockController {
 
 	@PostMapping("/{id}")
 	public ResponseEntity<?> updateStock(@RequestHeader(value = "idUser", required = true) String idUser,
-			@RequestBody Stock stock, @PathVariable String id)
-			throws JsonParseException, JsonMappingException, IOException {
+			@RequestBody Stock stock, @PathVariable String id) {
 		if (!userService.isAllowedToUpdateStock(idUser, id)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
@@ -129,7 +121,7 @@ public class StockController {
 		return ResponseEntity.badRequest().body(null);
 	}
 
-	private SharedUser getSharedUser(String idUser) throws JsonParseException, JsonMappingException, IOException {
+	private SharedUser getSharedUser(String idUser) {
 		return userService.getSharedUser(idUser);
 	}
 }

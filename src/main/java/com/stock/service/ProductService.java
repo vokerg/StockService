@@ -49,10 +49,7 @@ public class ProductService {
 	@Transactional
 	//TODO review
 	public void updateProductAttributes(String productId, List<String> attributesIds) throws BadRequestException {
-		Product product = getProduct(productId);
-		if (product == null) {
-			throw new BadRequestException("product does not exist");
-		}
+		Product product = getProductCheckNull(productId);
 		List<CategoryAttributeProduct> productAttributes = catAttrProdRepository.findByProduct(product);
 		Map<Long, CategoryAttributeProduct> attributesMap = getProductAttributesMap(productAttributes);
 		attributesIds.stream().forEach(attributeId -> {
@@ -67,6 +64,14 @@ public class ProductService {
 				}
 			}
 		});
+	}
+
+	private Product getProductCheckNull(String productId) throws BadRequestException {
+		Product product = getProduct(productId);
+		if (product == null) {
+			throw new BadRequestException("product does not exist");
+		}
+		return product;
 	}
 
 	private Map<Long, CategoryAttributeProduct> getProductAttributesMap(List<CategoryAttributeProduct> productAttributes) {

@@ -1,6 +1,5 @@
 package com.stock.controller;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,8 +17,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.stock.entity.CategoryAttributeProduct;
 import com.stock.entity.Product;
 import com.stock.entity.SharedUser;
@@ -75,7 +72,7 @@ public class ProductController {
 
 	@GetMapping("/{id}/productrest")
 	public List<StockRest> getProductRest(@RequestHeader(value = "idUser", required = true) String idUser,
-			@PathVariable String id) throws JsonParseException, JsonMappingException, IOException {
+			@PathVariable String id) {
 		Product product = productService.getProduct(id);
 		if (idUser != null) {
 			SharedUser user = userService.getSharedUser(idUser);
@@ -88,7 +85,7 @@ public class ProductController {
 
 	@PutMapping("")
 	public ResponseEntity<Product> createProduct(@RequestHeader(value = "idUser", required = true) String idUser,
-			@RequestBody Product product) throws JsonParseException, JsonMappingException, IOException {
+			@RequestBody Product product) {
 		if (!userService.isAllowedToChangeProduct(idUser)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
@@ -103,8 +100,7 @@ public class ProductController {
 
 	@PostMapping("/{id}")
 	public ResponseEntity<?> updateProduct(@RequestHeader(value = "idUser", required = true) String idUser,
-			@RequestBody Product product, @PathVariable String id)
-			throws JsonParseException, JsonMappingException, IOException {
+			@RequestBody Product product, @PathVariable String id) {
 		if (!userService.isAllowedToChangeProduct(idUser)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}

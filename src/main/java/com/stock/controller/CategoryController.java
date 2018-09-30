@@ -1,11 +1,11 @@
 package com.stock.controller;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -14,8 +14,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.stock.entity.Category;
 import com.stock.entity.CategoryAttribute;
 import com.stock.entity.CategoryAttributeProduct;
@@ -24,6 +22,8 @@ import com.stock.repository.CategoryAttributeProductRepository;
 import com.stock.repository.CategoryAttributeRepository;
 import com.stock.repository.CategoryRepository;
 import com.stock.repository.ProductRepository;
+import com.stock.service.BadRequestException;
+import com.stock.service.CategoryService;
 import com.stock.service.UserService;
 
 @RestController
@@ -43,6 +43,9 @@ public class CategoryController {
 	
 	@Autowired
 	ProductRepository productRepository;
+	
+	@Autowired
+	CategoryService categoryService;
 
 	@GetMapping("")
 	public List<Category> getAllCategories() {
@@ -62,8 +65,7 @@ public class CategoryController {
 
 	@PutMapping("/{id}/attributes")
 	public ResponseEntity<?> insertAttribute(@PathVariable String id, @RequestBody CategoryAttribute attribute,
-			@RequestHeader(value = "idUser", required = true) String idUser)
-			throws JsonParseException, JsonMappingException, IOException {
+			@RequestHeader(value = "idUser", required = true) String idUser) {
 
 		if (!userService.isAllowedToChangeProduct(idUser)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
@@ -75,6 +77,19 @@ public class CategoryController {
 		}
 		attribute.setCategory(category);
 		categoryAttributeRepository.save(attribute);
+		return ResponseEntity.ok(null);
+	}
+	
+	@DeleteMapping("/{id}/attributes/{attributeId}")
+	public ResponseEntity<?> deleteAttribute(String id, String attributeId, String idUser) {
+		if (!userService.isAllowedToChangeProduct(idUser)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+		try {
+			categoryService.deleteAttribute(id, attributeId);
+		} catch (BadRequestException e) {
+			return ResponseEntity.badRequest().body(null);
+		}
 		return ResponseEntity.ok(null);
 	}
 
