@@ -40,10 +40,10 @@ public class CategoryController {
 
 	@Autowired
 	CategoryAttributeProductRepository catAttrProdRepository;
-	
+
 	@Autowired
 	ProductRepository productRepository;
-	
+
 	@Autowired
 	CategoryService categoryService;
 
@@ -55,6 +55,20 @@ public class CategoryController {
 	@PutMapping("")
 	public ResponseEntity<?> insertCategory(@RequestBody Category category) {
 		categoryRepository.save(category);
+		return ResponseEntity.ok(null);
+	}
+
+	@DeleteMapping("/{id}")
+	public ResponseEntity<?> deleteCategory(@PathVariable String id,
+			@RequestHeader(value = "idUser", required = true) String idUser) {
+		if (!userService.isAllowedToChangeProduct(idUser)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+		try {
+			categoryService.deleteCategory(id);
+		} catch (BadRequestException e) {
+			return ResponseEntity.badRequest().body(null);
+		}
 		return ResponseEntity.ok(null);
 	}
 
@@ -79,9 +93,10 @@ public class CategoryController {
 		categoryAttributeRepository.save(attribute);
 		return ResponseEntity.ok(null);
 	}
-	
+
 	@DeleteMapping("/{id}/attributes/{attributeId}")
-	public ResponseEntity<?> deleteAttribute(String id, String attributeId, String idUser) {
+	public ResponseEntity<?> deleteAttribute(@PathVariable String id, @PathVariable String attributeId,
+			@RequestHeader(value = "idUser", required = true) String idUser) {
 		if (!userService.isAllowedToChangeProduct(idUser)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
 		}
