@@ -24,15 +24,11 @@ public class Product {
     @JoinColumn(name = "product_tree_id")
 	private ProductTree productTree;
 	
-	@OneToMany(cascade = CascadeType.ALL, fetch=FetchType.LAZY, mappedBy="product")
-	private List<CategoryAttributeProduct> categoryAttributeProducts;
+	@OneToMany(cascade = CascadeType.ALL, fetch=FetchType.LAZY, mappedBy="product", orphanRemoval = true)
+	protected List<CategoryAttributeProduct> categoryAttributeProducts;
 	
 	public List<CategoryAttributeProduct> getCategoryAttributeProducts() {
 		return categoryAttributeProducts;
-	}
-
-	public void setCategoryAttributeProducts(List<CategoryAttributeProduct> categoryAttributeProducts) {
-		this.categoryAttributeProducts = categoryAttributeProducts;
 	}
 
 	private float price;

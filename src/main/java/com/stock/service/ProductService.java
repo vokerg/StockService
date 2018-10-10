@@ -116,35 +116,7 @@ public class ProductService {
 		if (product.getProductTree() == null) {
 			throw new BadRequestException("product tree does not exist");
 		}
-		saveCategoryAttributeProducts(product);
+		product.getCategoryAttributeProducts().forEach(cap -> cap.setProduct(product));
 		productRepository.save(product);
-	}
-
-	private void saveCategoryAttributeProducts(Product product) {
-		List<CategoryAttributeProduct> prodCatAttrs = product.getCategoryAttributeProducts(); 
-		if (prodCatAttrs != null) {
-			List<CategoryAttribute> catAttrs = getCategoryAttributes(product);
-			catAttrProdRepository.deleteByProductAndCategoryAttributeNotIn(product, catAttrs);
-			List<Long> dbCatAttrIds = getDbCategoryAttributeIds(product);
-			prodCatAttrs.forEach(catAttrProd -> saveCategoryAttributeProduct(catAttrProd, product, dbCatAttrIds));
-			product.setCategoryAttributeProducts(null);
-		}
-	}
-	
-	private void saveCategoryAttributeProduct(CategoryAttributeProduct catAttrProd, Product product, List<Long> skipIds) {
-		if (!skipIds.contains(catAttrProd.getCategoryAttribute().getId())) {
-			catAttrProd.setProduct(product);
-			catAttrProdRepository.save(catAttrProd);
-		}
-	}
-
-	private List<Long> getDbCategoryAttributeIds(Product product) {
-		return catAttrProdRepository.findByProduct(product).stream()
-				.map(catAttr -> catAttr.getCategoryAttribute().getId()).collect(Collectors.toList());
-	}
-	
-	private List<CategoryAttribute> getCategoryAttributes(Product product) {
-		return product.getCategoryAttributeProducts().stream()
-				.map(catAttrProd -> catAttrProd.getCategoryAttribute()).collect(Collectors.toList());
 	}
 }

@@ -1,7 +1,5 @@
 package com.stock.service;
 
-import java.util.List;
-
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import com.stock.entity.Category;
 import com.stock.entity.CategoryAttribute;
-import com.stock.entity.CategoryAttributeProduct;
 import com.stock.repository.CategoryAttributeProductRepository;
 import com.stock.repository.CategoryRepository;
 
@@ -34,8 +31,6 @@ public class CategoryService {
 	}
 
 	private void deleteAttribute(Category category, CategoryAttribute catAttr) {
-		List<CategoryAttributeProduct> catAttrProds = catAttrProdRepo.findByCategoryAttribute(catAttr);
-		catAttrProds.forEach(catAttrProd -> catAttrProdRepo.delete(catAttrProd));
 		category.getCategoryAttributes().remove(catAttr);
 		catRepository.saveAndFlush(category);
 	}
