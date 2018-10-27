@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -72,14 +73,28 @@ public class CategoryController {
 		return ResponseEntity.ok(null);
 	}
 
+	@PostMapping("/{id}")
+	public ResponseEntity<Category> updateCategory(@PathVariable String id, @RequestBody Category category,
+			@RequestHeader(value = "idUser", required = true) String idUser) {
+		if (!userService.isAllowedToChangeProduct(idUser)) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+		}
+		try {
+			Category result = categoryService.updateCategory(id, category);
+			return ResponseEntity.ok(result);
+		} catch (BadRequestException e) {
+			return ResponseEntity.badRequest().body(null);
+		}
+	}
+
 	@GetMapping("/attributes")
 	public List<CategoryAttribute> getAllAttributes() {
 		return categoryAttributeRepository.findAll();
 	}
 
 	@PutMapping("/{id}/attributes")
-	public ResponseEntity<?> insertAttribute(@PathVariable String id, @RequestBody CategoryAttribute attribute,
-			@RequestHeader(value = "idUser", required = true) String idUser) {
+	public ResponseEntity<CategoryAttribute> insertAttribute(@PathVariable String id,
+			@RequestBody CategoryAttribute attribute, @RequestHeader(value = "idUser", required = true) String idUser) {
 
 		if (!userService.isAllowedToChangeProduct(idUser)) {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
@@ -91,7 +106,7 @@ public class CategoryController {
 		}
 		attribute.setCategory(category);
 		categoryAttributeRepository.save(attribute);
-		return ResponseEntity.ok(null);
+		return ResponseEntity.ok(attribute);
 	}
 
 	@DeleteMapping("/{id}/attributes/{attributeId}")
